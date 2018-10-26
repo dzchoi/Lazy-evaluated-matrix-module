@@ -1,6 +1,6 @@
 # Lazy-evaluated matrix module in C++
 
-This lazy-evaluated matrix module is intended to be used for calculations using matrices and writing functions that include matrix computations.
+This lazy-evaluated matrix module is intended to be used for calculations using matrices and writing functions that include matrix computations, particularly to help C++ programmers write their own matrix-handling functions in their own specific environments by using or extending the `matrix<T>` class from this module. This module is not for providing a full set of matrix operations as some existing matrix-computing packages do. (Personally, I have written this module to develop a neural network project at work, after searching for matrix modules having high memory-efficiency as well as great performance in vain.)
 
 This module is written in C++17, mostly in C++11, to be user-friendly in terms of its usage, and at the same time to be highly efficient in memory handling. You need to have basic knowledge of C++11 such as lambda function, copy-construct, move-construct, copy-assignment, move-assignment, lvalue references and rvalue references, in order to use this module effectively, and in particular to write your own functions.
 
@@ -79,7 +79,7 @@ Note also that:
 * mutable matrix variables are created ***without initialization***.
 ---
 
-<sub>[1] Actually, it depends on whether initializer is lvalue or rvalue. If it is lvalue, the matrix variable is created as immutable. If it is rvalue, the rvalue just gets moved into the new matrix variable, creating immutable matrix if it is immutable, or mutable matrix if it is mutable.</sub>
+<sub>[1] Actually, it depends on whether initializer is lvalue or rvalue. If it is lvalue, the matrix variable is created as immutable. If it is rvalue, the rvalue just gets moved into the new matrix variable, creating immutable matrix variable if it is immutable, or mutable matrix variable if it is mutable.</sub>
 
 ### Immutable matrices can depend on mutable matrices.
 
@@ -245,4 +245,10 @@ private:
 
 ### Runtime checking of invalid matrix operations
 
-Without defining compile constant `NDEBUG`, this module check for the validity of matrix operations such as sizes-matching on matrix addition/multiplication and range-checking on using subscript operator, `A(i, j)`.
+Without having compile constant `NDEBUG` defined, this module checks for the validity of matrix operations using `assert()` such as sizes-matching on matrix addition/multiplication, and range-checking on using subscript operator, `A(i, j)`.
+
+If we compile with `NDEBUG` defined such as using `-DNDEBUG`, we can remove all such runtime checks.
+
+### Some limitations
+
+* `matrix<T> A = A;` and `matrix<T> A = std::move(A)` will cause runtime error, which is not checked by this module for minimizing runtime overhead. However, `A = A;` and `A = std::move(A)` for a mutable matrix A run ok and do nothing but making some redundant copy of A in temporary memory.
