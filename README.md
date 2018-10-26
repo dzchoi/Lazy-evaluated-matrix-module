@@ -218,7 +218,7 @@ struct triple: matrix<T> {
     triple(matrix<T>&& A): matrix<T>(3 * std::move(A)) {}
 };
 ~~~
-Note that `3 * A` and `3 * std::move(A)` computes and creates an immutable matrix as an rvalue reference, which is then passed to the move constructor of `matrix<T>`. The `operator*()` actually distinguishes lvalue reference and rvalue reference for its second argument, and if it is lvalue reference, `operator*()` copies thunk(s) from it to build the resulting matrix, whereas if rvalue reference, `operator*()` simply moves (i.e, recycles) those thunk(s).
+Note that `3 * A` and `3 * std::move(A)` computes and creates an immutable matrix as an rvalue reference, which is then passed to the move constructor of `matrix<T>`. The `operator*()` actually distinguishes lvalue reference or rvalue reference for its second argument, and if it is lvalue reference, `operator*()` copies thunk(s) from it to build the resulting matrix, whereas if rvalue reference, `operator*()` simply moves (i.e, recycles) those thunk(s).
 
 `matrix<T>` has rich set of constructors besides copy and move constructors, which you can make use of to create your own functions. For example, `Id(n)` and `transpose(A)` functions are defined in this module as:
 ~~~C++
