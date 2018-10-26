@@ -151,4 +151,40 @@ matrix<T> triple(matrix<T>&& A)
 { return 3 * std::move(A); }  // std::move(A) is necessary to indicate A is an rvalue reference.
 ~~~
 
-The `return 3 * A` or `return 3 * std::move(A)` makes an immutable matrix and returns it as an rvalue reference.
+The `return 3 * A` and `return 3 * std::move(A)` makes an immutable matrix and returns it as an rvalue reference outside.
+
+### Defining functions by inheriting `matrix<T>` class
+
+The `triple` in above section can be also defined by inheriting `matrix<T>`:
+~~~C++
+template <typename T>
+struct triple: matrix<T> {
+    triple(const matrix<T>& A): matrix<T>(3 * A) {}
+    triple(matrix<T>&& A): matrix<T>(3 * std::move(A)) {}
+};
+~~~
+Note that `3 * A` and `3 * std::move(A)` computes and creates an immutable matrix as an rvalue reference, which is then passed to the move constructor of `matrix<T>`. The `operator*()` actually distinguishes lvalue reference and rvalue reference for its second argument, and if it is lvalue reference, `operator*()` copies thunk(s) from it to build the resulting matrix, whereas if rvalue reference, `operator*()` simply moves (i.e, recycles) those thunk(s).
+
+`matrix<T>` has rich set of constructors other than copy and move constructors, which you can make use of to create your own functions. For example, `Id(n)` and `transpose(A)` functions are defined in this module as:
+~~~C++
+// Id(n): nxn identity matrix
+template <typename T>
+struct Id: matrix<T> {
+    Id(unsigned size) : matrix<T>(size, size, &fn) {}
+private:
+    static T fn(unsigned i, unsigned j) { return T(i == j); }
+};
+
+Id(unsigned) -> Id<double>;
+
+
+
+// transpose(A)
+template <typename T>
+struct transpose: matrix<T> {
+    transpose(const matrix<T>& A): matrix<T>(A.cols, A.rows, fn, A) {}
+    transpose(matrix<T>&& A): matrix<T>(A.cols, A.rows, fn, std::move(A)) {}
+private:
+    static T fn(unsigned i, unsigned j, const matrix<T>& A) { return A(j, i); }
+};
+~~~
