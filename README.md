@@ -120,8 +120,13 @@ matrix<int> B;  // matrix<int> as specified
 
 This module does not provide complete set of matrix operations. You can use the `class matrix<T>` to define your own matrix operations. Basic operations that are provided by this module is:
 
-* `rows`, `cols` : `A.rows` and `A.cols` tell the size of `A`.
-* `operator()` : `A(i, j)` returns the (i,j)-th element of `A`.
+class members:
+* `.rows`, `.cols` : `A.rows` and `A.cols` tell the size of `A`.
+* `.operator()` : `A(i, j)` returns the (i,j)-th element of `A`.
+* `.is_mutable()` : `A.is_mutable()` returns a `bool` indicating whether `A` is mutable.
+* `operator=` : `A = B` and `A = std::move(B)` can copy- and move-assign `B` to `A`, respectively.
+
+non-members:
 * `Id(unsigned n)` : nxn identity matrix of `double`
 * `Id<T>(unsigned n)` : nxn identity matrix of `T`
 * `transpose(matrix<T> A)` : returns a new immutable matrix with `A`transposed
