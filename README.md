@@ -4,6 +4,12 @@ This lazy-evaluated matrix module is intended to be used for calculations using 
 
 This module is written in C++17, mostly in C++11, to be user-friendly in terms of its usage, and at the same time to be highly efficient in memory handling. You need to have basic knowledge of C++11 such as lambda function, copy-construct, move-construct, copy-assignment, move-assignment, lvalue references and rvalue references, in order to use this module effectively, and in particular to write your own functions.
 
+### C++17 is required
+
+This module requires C++17 for depending on:
+* class template argument deduction and deduction guides, and
+* std::invoke_result_t<>.
+
 ### Lazy evaluation
 
 Most matrix modules evaluate matrices eagerly and in place. They compute matrix expressions and store the results in memory, usually in two-dimensional arrays. However, this computing model may waste memory sometime, when matrices are very simple and easily computable.
@@ -114,6 +120,8 @@ matrix<int> B;  // matrix<int> as specified
 
 This module does not provide complete set of matrix operations. You can use the `class matrix<T>` to define your own matrix operations. Basic operations that are provided by this module is:
 
+* `rows`, `cols` : `A.rows` and `A.cols` tell the size of `A`.
+* `operator()` : `A(i, j)` returns the (i,j)-th element of `A`.
 * `Id(unsigned n)` : nxn identity matrix of `double`
 * `Id<T>(unsigned n)` : nxn identity matrix of `T`
 * `transpose(matrix<T> A)` : returns a new immutable matrix with `A`transposed
@@ -124,6 +132,29 @@ This module does not provide complete set of matrix operations. You can use the 
 * `A - B` : a new immutable matrix by subtracting `B` from `A`
 * `A * B` : a new immutable matrix by multiplying two matrices, `A` and `B`
 * `schur(A, B)` : a new immutable matrix of [Schur(Hadamard) product](https://en.wikipedia.org/wiki/Hadamard_product_(matrices)) between `A` and `B`
+
+### Subscript operator, `operator()(unsigned, unsigned)`
+
+Two kinds of `opeator()` is provided:
+* `T operator()(unsigned, unsigned) const`
+* `T& operator()(unsigned, unsigned)`
+
+The first one is called on const matrix, while the second is called on non-const matrix, regardless of the matrix is mutable or immutable. However, the second can be called only for mutable matrix and causes an assert error otherwise.
+~~~C++
+const matrix A = matrix(2, 3, 0.);
+std::cout << A(0, 0);  // OK
+A(0, 0) = 1.;  // compile-time error; A(0, 0) returns T, which is not assignable.
+
+matrix B = matrix(2, 3, 0.);
+std::cout << B(0, 0);  // runtime assert error; B is immutable but T& operator()(unsigned, unsigned) is called.
+B(0, 0) = 1.;  // same error
+
+matrix C;
+C = matrix(2, 3, 0.);
+std::cout << C(0, 0);  // OK
+C(0, 0) = 1.;  // OK
+~~~
+Be careful that as the declaration of `B` above shows, only `T& operator()(unsigned, unsigned)` is called if the matrix is not declared `const`. This is why `const` declaration is always recommended for immutable matrices, and I don't find any reason not to do.
 
 ### Defining your own function
 
@@ -165,7 +196,7 @@ struct triple: matrix<T> {
 ~~~
 Note that `3 * A` and `3 * std::move(A)` computes and creates an immutable matrix as an rvalue reference, which is then passed to the move constructor of `matrix<T>`. The `operator*()` actually distinguishes lvalue reference and rvalue reference for its second argument, and if it is lvalue reference, `operator*()` copies thunk(s) from it to build the resulting matrix, whereas if rvalue reference, `operator*()` simply moves (i.e, recycles) those thunk(s).
 
-`matrix<T>` has rich set of constructors other than copy and move constructors, which you can make use of to create your own functions. For example, `Id(n)` and `transpose(A)` functions are defined in this module as:
+`matrix<T>` has rich set of constructors besides copy and move constructors, which you can make use of to create your own functions. For example, `Id(n)` and `transpose(A)` functions are defined in this module as:
 ~~~C++
 // Id(n): nxn identity matrix
 template <typename T>
@@ -178,7 +209,6 @@ private:
 Id(unsigned) -> Id<double>;
 
 
-
 // transpose(A)
 template <typename T>
 struct transpose: matrix<T> {
@@ -188,3 +218,7 @@ private:
     static T fn(unsigned i, unsigned j, const matrix<T>& A) { return A(j, i); }
 };
 ~~~
+
+### Runtime checking of invalid matrix operations
+
+Without defining compile constant `NDEBUG`, this module check for the validity of matrix operations such as sizes-matching on matrix addition/multiplication and range-checking on using subscript operator, `A(i, j)`.
