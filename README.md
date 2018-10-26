@@ -189,6 +189,23 @@ matrix<T> triple(matrix<T>&& A)
 
 The `return 3 * A` and `return 3 * std::move(A)` makes an immutable matrix and returns it as an rvalue reference outside.
 
+When returning mutable matrices, ***keep in mind that mutable matrices are NOT copied as is*** but are referred to as references, and be careful not to leave any dangling references of mutable matrices. You can use rvalue reference, if you want to return a mutable matrix:
+~~~C++
+template <typename T>
+matrix<T> mutable_Id(unsigned size)
+{
+    matrix<T> Id;
+    Id = matrix(size, size, [](unsigned i, unsigned j){ return T(i == j); });
+    return std::move(Id);
+}
+
+int main()
+{
+    matrix A = mutable_Id<double>(3);
+    // A is initialized with rvalue reference of a mutable matrix, and A is also a mutable matrix.
+}
+~~~
+
 ### Defining functions by inheriting `matrix<T>` class
 
 The `triple` in above section can be also defined by inheriting `matrix<T>`:
