@@ -75,13 +75,15 @@ From now on, we call:
 * ***mutable matrix***: eager-evaluated matrix that is (always) bound to a variable.
 
 Note also that:
-* immutable matrix variables are created when declaring ***with initialization***.
+* immutable matrix variables are created when declaring ***with initialization***.<sup>[1]</sup>
 * mutable matrix variables are created ***without initialization***.
 ---
 
+<sub>[1] Actually, it depends on whether initializer is lvalue or rvalue. If it is lvalue, the matrix variable is created as immutable. If it is rvalue, the rvalue just gets moved into the new matrix variable, creating immutable matrix if it is immutable, or mutable matrix if it is mutable.</sub>
+
 ### Immutable matrices can depend on mutable matrices.
 
-When we define an immutable matrix from existing immutable matrices (immutables in short), all expressions (called thunks as they are compiled expressions) from existing immutables are copied to build a thunk for the new immutable matrix.<sup>[1]</sup>
+When we define an immutable matrix from existing immutable matrices (immutables in short), all expressions (called thunks as they are compiled expressions) from existing immutables are copied to build a thunk for the new immutable matrix.<sup>[2]</sup>
 
 Immutable matrices can also depend on existing mutables, and in this case, references of the mutables (that is, `const matrix<T>&`) are used to build the thunk, instead of copying the whole in-memory arrays associated with the mutables. This is actually where the memory-efficiency of this modules comes into play.
 
@@ -98,7 +100,7 @@ B(0, 0) = -1;  // We can change B as is mutable.
 std::cout << C(0, 0) << '\n';  // will show -1.
 ~~~
 
-<sub>[1] All thunks and sub-thunks from dependent immutables are traced and copied entirely. That means, if we have `matrix C = A + B; matrix D = C;`, it is the same as `matrix C = A + B; matrix D = A + B;` in regarding to the internals of `C` and `D`, and `D` does not make use of `C` for saving some memory space. This is technically because C++ does not have global garbage collector as Python or some other dynamically-typed languages do, and we cannot control the lifetime of dependent matrix variables; we cannot extend the their lifetime just because we are referring to them. However, thunks do not occupy so much amount of memory as arrays in mutable matrices, and we can decide not to make additional matrix variables if we concern the memory space the redundant thunks may occupy.</sub>
+<sub>[2] All thunks and sub-thunks from dependent immutables are traced and copied entirely. That means, if we have `matrix C = A + B; matrix D = C;`, it is the same as `matrix C = A + B; matrix D = A + B;` in regarding to the internals of `C` and `D`, and `D` does not make use of `C` for saving some memory space. This is technically because C++ does not have global garbage collector as Python or some other dynamically-typed languages do, and we cannot control the lifetime of dependent matrix variables; we cannot extend the their lifetime just because we are referring to them. However, thunks do not occupy so much amount of memory as arrays in mutable matrices, and we can decide not to make additional matrix variables if we concern the memory space the redundant thunks may occupy.</sub>
 
 ### `matrix<T>` is a template.
 
