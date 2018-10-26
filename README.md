@@ -8,7 +8,7 @@ This module is written in C++17, mostly in C++11, to be user-friendly in terms o
 
 This module requires C++17 for depending on:
 * class template argument deduction and deduction guides, and
-* std::invoke_result_t<>.
+* `std::invoke_result_t<>`.
 
 ### Lazy evaluation
 
