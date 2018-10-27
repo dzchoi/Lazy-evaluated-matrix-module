@@ -1,6 +1,6 @@
 # Lazy-evaluated matrix module in C++
 
-This lazy-evaluated matrix module is intended to be used for computations using matrices and writing functions that include matrix computations, particularly to help C++ programmers write their own matrix-handling functions in their own specific environments by using or extending the `matrix<T>` class from this module. This module is not for providing a complete set of matrix operations as some existing matrix-computing packages do. (Personally, I have written this module to develop a neural network project at work, after searching for matrix modules having high memory-efficiency as well as great performance in vain.)
+This lazy-evaluated matrix module is intended to be used for computations using matrices and for writing functions that include matrix computations, particularly to help C++ programmers write their own matrix-handling functions in their own specific environments by using or extending the `matrix<T>` class from this module. This module is not for providing a complete set of matrix operations as some existing matrix-computing packages do. (Personally, I have written this module to develop a neural network project at work, after searching for matrix modules having high memory-efficiency as well as great performance in vain.)
 
 This module is written in C++17, mostly in C++11, to be user-friendly in terms of its usage, and at the same time to be both efficient in memory handling and effective in performance. You need to have basic knowledge of C++11 such as lambda functions, copy-constructs, move-constructs, copy-assignments, move-assignments, lvalue references and rvalue references, in order to use this module effectively, and in particular to write your own functions.
 
@@ -80,13 +80,13 @@ Note also that:
 
 <sub>[1] However, mutable matrix can be turned into an rvalue reference using `std::move()`.</sub>
 
-<sub>[2] Actually, it depends on whether initializer is lvalue or rvalue. If it is lvalue, the matrix variable is created as immutable. If it is rvalue, the rvalue just gets moved into the new matrix variable, creating immutable matrix variable if it is immutable, or mutable matrix variable if it is mutable.</sub>
+<sub>[2] Actually, it depends on whether initializer is either lvalue or rvalue. If it is lvalue, the matrix variable is created as immutable. If it is rvalue, the rvalue just gets moved into the new matrix variable, creating immutable matrix variable if it is immutable, or mutable matrix variable if it is mutable.</sub>
 
 ### Immutable matrices can depend on mutable matrices.
 
-When we define an immutable matrix from existing immutable matrices (immutables in short), all expressions (called thunks as they are compiled expressions) from existing immutables are copied to build a thunk for the new immutable matrix.<sup>[3]</sup>
+When we define an immutable matrix using existing immutable matrices (immutables in short), all expressions (called thunks as they are compiled expressions) from existing immutables are copied to build a thunk for the new immutable matrix.<sup>[3]</sup>
 
-Immutable matrices can also depend on existing mutables, and in this case, references of the mutables (that is, `const matrix<T>&`) are used to build the thunk, instead of copying the whole in-memory arrays associated with the mutables. This is actually where the memory-efficiency of this modules comes into play.
+Immutable matrices can also depend on existing mutables, and in this case, references of the mutables (that is, `const matrix<T>&`) are used to build the thunk, instead of copying the whole in-memory arrays associated with the mutables. This is actually where the memory-efficiency of this module comes into play.
 
 However, programmers should take care of these dependencies and should be careful not to break dependencies.
 
@@ -101,7 +101,7 @@ B(0, 0) = -1;  // We can change B as is mutable.
 std::cout << C(0, 0) << '\n';  // will show -1.
 ~~~
 
-<sub>[3] All thunks and sub-thunks from dependent immutables are traced and copied entirely. That means, if we have `matrix C = A + B; matrix D = C;`, it is the same as `matrix C = A + B; matrix D = A + B;` in regarding to the internals of `C` and `D`, and `D` does not make use of `C` for saving some memory space. This is technically because C++ does not have global garbage collector as Python or some other dynamically-typed languages do, and we cannot control the lifetime of dependent matrix variables; we cannot extend the their lifetime just because we are referring to them. However, thunks do not occupy so much amount of memory as arrays in mutable matrices, and we can decide not to make additional matrix variables if we concern the memory space the redundant thunks may occupy.</sub>
+<sub>[3] All thunks and sub-thunks from dependent immutables are traced and copied entirely. That means, if we have `matrix C = A + B; matrix D = C;`, it is the same as `matrix C = A + B; matrix D = A + B;` in regarding to the internals of `C` and `D`, and `D` does not make use of `C` for saving some memory space. This is technically because C++ does not have global garbage collector as Python or some other dynamically-typed languages do, and we cannot control the lifetime of dependent matrix variables; we cannot extend their lifetime just because we are referring to them. However, thunks do not occupy so much amount of memory as arrays associated with mutable matrices, and we can decide not to make additional matrix variables if we concern the memory space the redundant thunks may occupy.</sub>
 
 ### `matrix<T>` is a template.
 
@@ -113,7 +113,7 @@ matrix C(3, 3, [](unsigned i, unsigned j){return double(i == j); });  // matrix<
 matrix D = A + C;  // matrix<double> since A and C are matrix<double>.
 ~~~
 
-Even when we create a mutable matrix, which does not include any information about its elements, we can still omit `T`. In this case, `double` is defaulted.
+Even when we create a mutable matrix at first, which is 0x0 matrix and does not include any information about its elements, we can still omit `T`. In this case, `double` is defaulted.
 ~~~C++
 matrix A;  // matrix<double> by default
 matrix<int> B;  // matrix<int> as specified
@@ -121,18 +121,18 @@ matrix<int> B;  // matrix<int> as specified
 
 ### Matrix operations
 
-This module does not provide complete set of matrix operations. You can use the `class matrix<T>` to define your own matrix operations. Basic operations that are provided by this module is:
+This module does not provide a complete set of matrix operations. As you can see later, you can use the `class matrix<T>` to define your own matrix operations. Basic operations that are provided by this module are:
 
 class members:
 * `.rows`, `.cols` : `A.rows` and `A.cols` tell the size of `A`.
 * `.operator()` : `A(i, j)` returns the (i,j)-th element of `A`.
-* `.is_mutable()` : `A.is_mutable()` returns a `bool` indicating whether `A` is mutable.
+* `.is_mutable(void)` : `A.is_mutable()` returns a `bool` indicating whether `A` is mutable.
 * `operator=` : `A = B` and `A = std::move(B)` can copy- and move-assign `B` to `A`, respectively.
 
-non-members:
+non-member functions:
 * `Id(unsigned n)` : nxn identity matrix of `double`
 * `Id<T>(unsigned n)` : nxn identity matrix of `T`
-* `transpose(matrix<T> A)` : returns a new immutable matrix with `A`transposed
+* `transpose(matrix<T> A)` : returns a new immutable matrix with `A` transposed
 * `matrix(T (*fn)(T), matrix<T> A)` : a new immutable matrix with applying `fn` to each element of `A`
 * `map(T (*fn)(T), matrix<T> A)` : syntactic sugar for `matrix(T (*fn)(T), matrix<T> A)`
 * `c * A` (where `T c` and `matrix<T> A`) : scalar multiplication of `c` and `A`
@@ -147,7 +147,7 @@ Two kinds of `opeator()` is provided:
 * `T operator()(unsigned, unsigned) const`
 * `T& operator()(unsigned, unsigned)`
 
-The first one is called on const matrix, while the second is called on non-const matrix, regardless of the matrix is mutable or immutable. However, the second can be called only for mutable matrix and causes an assert error otherwise.
+The first one is called on `const` matrices, while the second is called on non-`const` matrices, regardless of the matrix is mutable or immutable. However, the second can be called only for mutable matrices and causes an assert error otherwise.
 ~~~C++
 const matrix A = matrix(2, 3, 0.);
 std::cout << A(0, 0);  // OK
