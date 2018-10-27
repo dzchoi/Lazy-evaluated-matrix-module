@@ -1,8 +1,8 @@
 # Lazy-evaluated matrix module in C++
 
-This lazy-evaluated matrix module is intended to be used for calculations using matrices and writing functions that include matrix computations, particularly to help C++ programmers write their own matrix-handling functions in their own specific environments by using or extending the `matrix<T>` class from this module. This module is not for providing a full set of matrix operations as some existing matrix-computing packages do. (Personally, I have written this module to develop a neural network project at work, after searching for matrix modules having high memory-efficiency as well as great performance in vain.)
+This lazy-evaluated matrix module is intended to be used for computations using matrices and writing functions that include matrix computations, particularly to help C++ programmers write their own matrix-handling functions in their own specific environments by using or extending the `matrix<T>` class from this module. This module is not for providing a complete set of matrix operations as some existing matrix-computing packages do. (Personally, I have written this module to develop a neural network project at work, after searching for matrix modules having high memory-efficiency as well as great performance in vain.)
 
-This module is written in C++17, mostly in C++11, to be user-friendly in terms of its usage, and at the same time to be highly efficient in memory handling. You need to have basic knowledge of C++11 such as lambda function, copy-construct, move-construct, copy-assignment, move-assignment, lvalue references and rvalue references, in order to use this module effectively, and in particular to write your own functions.
+This module is written in C++17, mostly in C++11, to be user-friendly in terms of its usage, and at the same time to be both efficient in memory handling and effective in performance. You need to have basic knowledge of C++11 such as lambda functions, copy-constructs, move-constructs, copy-assignments, move-assignments, lvalue references and rvalue references, in order to use this module effectively, and in particular to write your own functions.
 
 ### C++17 is required
 
@@ -12,29 +12,29 @@ This module requires C++17 for depending on:
 
 ### Lazy evaluation
 
-Most matrix modules evaluate matrices eagerly and in place. They compute matrix expressions and store the results in memory, usually in two-dimensional arrays. However, this computing model may waste memory sometime, when matrices are very simple and easily computable.
+Most existing matrix modules evaluate matrices eagerly and in place. They compute matrix expressions and store the results in memory, usually in two-dimensional arrays. However, this kind of computing model may waste memory sometimes, when matrices are simple and easily computable.
 
 For example, 1000x1000 identity matrix will occupy an array of 1,000,000 entries, most of which are nothing but 0.
 
 For another example, when we need `transpose(A)` for a given matrix `A`, we don't actually need a separate matrix in memory that has the same elements of `A` but in slightly different order. We could simply use (j,i)-th element of `A` when we need the (i,j)-the element of `transpose(A)`.
 
-This module can define the 3x3 identity matrix as:
+This module can define the 1000x1000 identity matrix as:
 ~~~C++
-matrix I = matrix(3, 3, [](unsigned i, unsigned j){ return double(i == j); });
+matrix I = matrix(1000, 1000, [](unsigned i, unsigned j){ return double(i == j); });
 ~~~
 
-The above matrix `I` holds the lambda function instead of the whole 3x3 two-dimentional array, and computs each of its element on demand:
+The above matrix `I` holds the lambda function instead of the whole 1000x1000 two-dimensional array, and computes each of its elements on demand:
 ~~~C++
 std::cout << I(0, 0);
 ~~~
 
 For a zero-matrix that consists of all 0s, we can define it as:
 ~~~C++
-matrix Zero = matrix(3, 3, [](unsigned, unsigned){ return 0.; });  // returning "0." to make it matrix<double>.
+matrix Zero = matrix(1000, 1000, [](unsigned, unsigned){ return 0.; });  // returning "0." to make it matrix<double>.
 ~~~
-However, we can use a syntactic sugar for that one:
+However, we can use a syntactic sugar for that:
 ~~~C++
-matrix Zero = matrix(3, 3, 0.);
+matrix Zero = matrix(1000, 1000, 0.);
 ~~~
 
 ### Lazy evaluation and eager evaluation can be mixed.
@@ -60,30 +60,30 @@ matrix One = matrix(2, 3, 1.);
 Zero = One;  // runtime assertion error!
 ~~~
 
-However, eager-evaluated matrix has an associated in-memory array for storing its elements (that is, in C++ terms eager-evaluated matrix always exists as an lvalue). It comes into existence on declaring a variable without initialization, and can be changed using assignment operator `=`:
+However, eager-evaluated matrix has an associated in-memory array for storing its elements. It comes into existence on declaring a variable without initialization, and can be changed using assignment operator `=`:
 ~~~C++
 matrix X;  // mutable (eager-evaluated) matrix
-X = matrix(2, 3, 1.);
-X = 2 * X;
+X = 2 * matrix(2, 3, 1.);  // 2 * matrix(2, 3, 1.) is lazy-evaluated matrix, and gets evaluated and assigned to X.
 ~~~
 
-As we can see above, we can assign a lazy-evaluated matrix to a eager-evaluated matrix and get the expression held in the lazy-evaluated matrix evaluated. This is the only way to evaluate lazy-evaluated matrices eventually. (Actually, there is another way of evalution, applying a subscript operator to them.)
+As we can see above, we can assign a lazy-evaluated matrix to an eager-evaluated matrix and get the expression held in the lazy-evaluated matrix evaluated. This is one of two ways to evaluate lazy-evaluated matrices eventually. (Another way of evaluation is applying a subscript operator to them.)
 
 ---
 From now on, we call:
 * ***immutable matrix***: lazy-evaluated matrix that is bound to a variable or not.
-* ***mutable matrix***: eager-evaluated matrix that is (always) bound to a variable.
+* ***mutable matrix***: eager-evaluated matrix that is always bound to a variable<sup>[1]</sup>.
 
 Note also that:
-* immutable matrix variables are created when declaring ***with initialization***.<sup>[1]</sup>
+* immutable matrix variables are created when declaring ***with initialization***.<sup>[2]</sup>
 * mutable matrix variables are created ***without initialization***.
 ---
 
-<sub>[1] Actually, it depends on whether initializer is lvalue or rvalue. If it is lvalue, the matrix variable is created as immutable. If it is rvalue, the rvalue just gets moved into the new matrix variable, creating immutable matrix variable if it is immutable, or mutable matrix variable if it is mutable.</sub>
+<sub>[1] However, mutable matrix can be turned into an rvalue reference using `std::move()`.</sub>
+<sub>[2] Actually, it depends on whether initializer is lvalue or rvalue. If it is lvalue, the matrix variable is created as immutable. If it is rvalue, the rvalue just gets moved into the new matrix variable, creating immutable matrix variable if it is immutable, or mutable matrix variable if it is mutable.</sub>
 
 ### Immutable matrices can depend on mutable matrices.
 
-When we define an immutable matrix from existing immutable matrices (immutables in short), all expressions (called thunks as they are compiled expressions) from existing immutables are copied to build a thunk for the new immutable matrix.<sup>[2]</sup>
+When we define an immutable matrix from existing immutable matrices (immutables in short), all expressions (called thunks as they are compiled expressions) from existing immutables are copied to build a thunk for the new immutable matrix.<sup>[3]</sup>
 
 Immutable matrices can also depend on existing mutables, and in this case, references of the mutables (that is, `const matrix<T>&`) are used to build the thunk, instead of copying the whole in-memory arrays associated with the mutables. This is actually where the memory-efficiency of this modules comes into play.
 
@@ -100,7 +100,7 @@ B(0, 0) = -1;  // We can change B as is mutable.
 std::cout << C(0, 0) << '\n';  // will show -1.
 ~~~
 
-<sub>[2] All thunks and sub-thunks from dependent immutables are traced and copied entirely. That means, if we have `matrix C = A + B; matrix D = C;`, it is the same as `matrix C = A + B; matrix D = A + B;` in regarding to the internals of `C` and `D`, and `D` does not make use of `C` for saving some memory space. This is technically because C++ does not have global garbage collector as Python or some other dynamically-typed languages do, and we cannot control the lifetime of dependent matrix variables; we cannot extend the their lifetime just because we are referring to them. However, thunks do not occupy so much amount of memory as arrays in mutable matrices, and we can decide not to make additional matrix variables if we concern the memory space the redundant thunks may occupy.</sub>
+<sub>[3] All thunks and sub-thunks from dependent immutables are traced and copied entirely. That means, if we have `matrix C = A + B; matrix D = C;`, it is the same as `matrix C = A + B; matrix D = A + B;` in regarding to the internals of `C` and `D`, and `D` does not make use of `C` for saving some memory space. This is technically because C++ does not have global garbage collector as Python or some other dynamically-typed languages do, and we cannot control the lifetime of dependent matrix variables; we cannot extend the their lifetime just because we are referring to them. However, thunks do not occupy so much amount of memory as arrays in mutable matrices, and we can decide not to make additional matrix variables if we concern the memory space the redundant thunks may occupy.</sub>
 
 ### `matrix<T>` is a template.
 
