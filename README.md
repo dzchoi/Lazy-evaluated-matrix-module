@@ -165,7 +165,7 @@ C(0, 0) = 1.;  // OK
 ~~~
 Be careful that as the declaration of `B` above shows, only `T& operator()(unsigned, unsigned)` is called if the matrix is not declared `const`. This is why `const` declaration is always recommended for immutable matrices, and I don't find any reason not to do.
 
-### Defining your own function
+### Defining your own functions
 
 Basic knowledge of copy/move-construct of C++11 is needed when passing matrices in and out of functions.
 
