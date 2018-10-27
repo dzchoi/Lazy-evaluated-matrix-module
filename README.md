@@ -253,3 +253,9 @@ If we compile with `NDEBUG` defined such as using `-DNDEBUG`, we can remove all 
 ### Some limitations
 
 * `matrix<T> A = A;` and `matrix<T> A = std::move(A)` will cause runtime error, which is not checked by this module for minimizing runtime overhead. However, `A = A;` and `A = std::move(A)` for a mutable matrix A run ok and do nothing but making some redundant copy of A in temporary memory.
+
+### License
+
+This project is licensed under the terms of the MIT license.
+
+- Dongzin Choi
