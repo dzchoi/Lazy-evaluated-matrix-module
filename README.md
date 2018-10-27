@@ -258,4 +258,4 @@ If we compile with `NDEBUG` defined such as using `-DNDEBUG`, we can remove all 
 
 This project is licensed under the terms of the MIT license.
 
-- Dongzin Choi
+-- Dongzin Choi (https://www.linkedin.com/in/dzchoi/)
