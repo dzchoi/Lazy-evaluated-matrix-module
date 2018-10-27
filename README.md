@@ -79,6 +79,7 @@ Note also that:
 ---
 
 <sub>[1] However, mutable matrix can be turned into an rvalue reference using `std::move()`.</sub>
+
 <sub>[2] Actually, it depends on whether initializer is lvalue or rvalue. If it is lvalue, the matrix variable is created as immutable. If it is rvalue, the rvalue just gets moved into the new matrix variable, creating immutable matrix variable if it is immutable, or mutable matrix variable if it is mutable.</sub>
 
 ### Immutable matrices can depend on mutable matrices.
