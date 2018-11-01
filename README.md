@@ -86,7 +86,7 @@ Note also that:
 
 ### Immutable matrices can depend on mutable matrices.
 
-When we define an immutable matrix using existing immutable matrices (immutables in short), all expressions (called thunks as being compiled expressions) from existing immutables are copied to build a thunk for the new immutable matrix.<sup>[3]</sup>
+When we define an immutable matrix using existing immutable matrices (immutables in short), all expressions (called ***thunks*** as being compiled expressions) from existing immutables are copied to build a thunk for the new immutable matrix.<sup>[3]</sup>
 
 Immutable matrices can also depend on existing mutables, and in this case, references of the mutables (that is, `const matrix<T>&`) are used to build the thunk, rather than copying the whole in-memory arrays associated with the mutables. This is actually where the memory-efficiency of this module comes into play.
 
@@ -109,7 +109,7 @@ std::cout << C(0, 0) << '\n';  // will show -2.
 
 `matrix<T>` is actually a template, not a single type. It takes its element type as the template argument `T`, which should be an arithmetic type like `int`, `float` and `double`. Mostly, however, we can omit the type `T` and have it deduced from the initializer, thanks to template argument deduction of C++17.
 ~~~C++
-matrix A(3, 3, 1.);  // matrix<double> because of 1. is double
+matrix A(3, 3, 1.);  // matrix<double> since 1. is double
 matrix B = matrix(3, 3, 1.);  // same here
 matrix C(3, 3, [](unsigned i, unsigned j){return double(i == j); });  // matrix<double> since the lambda returns double.
 matrix D = A + C;  // matrix<double> since A and C are matrix<double>.
@@ -253,9 +253,113 @@ Without having compile constant `NDEBUG` defined, this module checks for the val
 
 If we compile with `NDEBUG` defined such as using `-DNDEBUG`, we can remove all such runtime checks.
 
+### Design of `matrix<T>`
+
+In terms of data members, `matrix<T>` is just a wrapper for a thunk and owns the thunk by declaring `std::unique_ptr<_thunk<T>>` as its only data member:
+~~~C++
+template <typename T>
+class matrix {
+private:
+    std::unique_ptr<_thunk<T>> uthunk;
+
+public:
+    const unsigned& rows = uthunk->rows;
+    const unsigned& cols = uthunk->cols;
+
+    matrix(const matrix& M)  // creates immutable matrix by copying and referencing.
+    : uthunk(M.uthunk->copy()) {}
+
+    matrix(matrix&& M)  // moves M as is.
+    : uthunk(std::move(M.uthunk)) {}
+...
+};
+~~~
+
+Thunks are defined as a separate class:
+~~~C++
+// _thunk<T> is a function object for evaluating matrix<T> lazily.
+template <typename T>
+class _thunk {
+public:
+    unsigned rows, cols;
+
+    virtual T operator()(unsigned, unsigned) const =0;  // evaluator
+    virtual ~_thunk() {}
+    virtual std::unique_ptr<_thunk> copy() const =0;  // duplicate myself
+    virtual _thunk_tab<T>* to_pthunk_tab() { return nullptr; }
+
+protected:
+    _thunk(unsigned rows, unsigned cols): rows(rows), cols(cols) {}
+};
+~~~
+Note that the member function `_thunk<T>::copy()` can be called on a thunk to duplicate itself, which is how `matrix<T>` copies matrices around.
+
+As an abstract class, `_thunk<T>` has many child (i.e, derived) classes, one of which is like:
+~~~C++
+template <typename T>
+class _thunk_c: public _thunk<T> {
+private:
+    using _thunk<T>::rows;
+    using _thunk<T>::cols;
+    T c;
+
+public:
+    _thunk_c(unsigned rows, unsigned cols, T c)
+    : _thunk<T>(rows, cols), c(c) {}
+
+    T operator()(unsigned, unsigned) const override { return c; }
+    std::unique_ptr<_thunk<T>> copy() const override {
+        return std::make_unique<_thunk_c>(rows, cols, c); }
+};
+~~~
+
+For mutable matrices, we have two derived thunk classes, `_thunk_tab<T>` and `_thunk_tab_view<T>`. `_thunk_tab<T>` is the (only) actual thunk that contains and owns the in-memory array for storing all its elements, whereas `_thunk_tab_view<T>` does not have its own array but holds just a reference to another array instead.
+~~~C++
+template <typename T>
+class _thunk_tab_view: public _thunk<T> {
+private:
+    using _thunk<T>::rows;
+    using _thunk<T>::cols;
+    const T* table;  // immutable
+
+public:
+    _thunk_tab_view(unsigned rows, unsigned cols, const T* table)
+    : _thunk<T>(rows, cols), table(table) {}
+
+    T operator()(unsigned i, unsigned j) const override {
+        return table[i*cols + j]; }
+    std::unique_ptr<_thunk<T>> copy() const override {
+        return std::make_unique<_thunk_tab_view>(rows, cols, table); }
+};
+
+template <typename T>
+class _thunk_tab: public _thunk<T> {
+private:
+    using _thunk<T>::rows;
+    using _thunk<T>::cols;
+    std::unique_ptr<T[]> table;
+
+public:
+    _thunk_tab(): _thunk<T>(0, 0), table{} {}  // table = nullptr
+
+    T operator()(unsigned i, unsigned j) const override {
+        return table[i*cols + j]; }
+    T& operator()(unsigned i, unsigned j) {
+        return table[i*cols + j]; }
+    std::unique_ptr<_thunk<T>> copy() const override {
+        // Note that we do not copy _thunk_tab<T> as is, but as a _thunk_tab_view<T>.
+        return std::make_unique<_thunk_tab_view<T>>(rows, cols, table.get()); }
+
+    void operator=(const _thunk<T>&);
+    void operator=(_thunk_tab&&);
+};
+~~~
+
+Note that the `copy()` of `_thunk_tab<T>` does not duplicate the its internal array as in another `_thunk_tab<T>`, but creates just the reference of the array as `_thunk_tab_view<T>`, on which the magic of this module is based. Note also that as the only mutable thunk, only `_thunk_tab<T>` has `operator=()` defined.
+
 ### Some limitations
 
-* `matrix<T> A = A;` and `matrix<T> A = std::move(A)` will cause runtime error, which is not explicitly checked by this module for minimizing runtime overhead. However, `A = A;` and `A = std::move(A)` for a mutable matrix A run ok and do nothing but making some redundant copy of A in temporary memory (without any memory leak).
+* `matrix<T> A = A;` and `matrix<T> A = std::move(A)` will cause runtime error, which is not explicitly checked by this module for minimizing runtime overhead. However, `A = A;` and `A = std::move(A)` for a mutable matrix A run ok and do nothing but making some redundant copy of A in temporary memory (without any memory leak though).
 
 ### License
 
