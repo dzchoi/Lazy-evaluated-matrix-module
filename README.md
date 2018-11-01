@@ -275,7 +275,7 @@ public:
 };
 ~~~
 
-Thunks are defined as a separate class:
+Thunks are defined as a separate (abstract) class:
 ~~~C++
 // _thunk<T> is a function object for evaluating matrix<T> lazily.
 template <typename T>
@@ -292,7 +292,7 @@ protected:
     _thunk(unsigned rows, unsigned cols): rows(rows), cols(cols) {}
 };
 ~~~
-Note that the member function `_thunk<T>::copy()` can be called on a thunk to duplicate itself, which is how `matrix<T>` copies matrices around.
+Note that the member function `_thunk<T>::copy()` can be called on a thunk to duplicate the thunk as a whole, which is how `matrix<T>` copies matrices around.
 
 As an abstract class, `_thunk<T>` has many child (i.e, derived) classes, one of which is like:
 ~~~C++
@@ -313,7 +313,7 @@ public:
 };
 ~~~
 
-For mutable matrices, we have two derived thunk classes, `_thunk_tab<T>` and `_thunk_tab_view<T>`. `_thunk_tab<T>` is the (only) actual thunk that contains and owns the in-memory array for storing all its elements, whereas `_thunk_tab_view<T>` does not have its own array but holds just a reference to another array instead.
+For mutable matrices, we have two derived thunk classes, `_thunk_tab<T>` and `_thunk_tab_view<T>`. The `_thunk_tab<T>` is the (only) actual thunk that contains and owns in-memory array for storing all its elements, whereas `_thunk_tab_view<T>` does not have its own array but holds just a reference to another array instead.
 ~~~C++
 template <typename T>
 class _thunk_tab_view: public _thunk<T> {
@@ -355,7 +355,7 @@ public:
 };
 ~~~
 
-Note that the `copy()` of `_thunk_tab<T>` does not duplicate the its internal array as in another `_thunk_tab<T>`, but creates just the reference of the array as `_thunk_tab_view<T>`, on which the magic of this module is based. Note also that as the only mutable thunk, only `_thunk_tab<T>` has `operator=()` defined.
+Note that the `copy()` from `_thunk_tab<T>` does not duplicate its internal array as in another `_thunk_tab<T>`, but creates just the reference to the array as `_thunk_tab_view<T>`, which is how the "magic" of this module comes in. Note also that as the only mutable thunk, only `_thunk_tab<T>` has `operator=()` defined.
 
 ### Some limitations
 
