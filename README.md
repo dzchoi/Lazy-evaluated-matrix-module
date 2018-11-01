@@ -255,7 +255,7 @@ If we compile with `NDEBUG` defined such as using `-DNDEBUG`, we can remove all 
 
 ### Design of `matrix<T>`
 
-In terms of data members, `matrix<T>` is just a wrapper for a thunk and owns the thunk by declaring `std::unique_ptr<_thunk<T>>` as its only data member:
+Regarding to data members, `matrix<T>` is just a wrapper for a thunk and owns the thunk by declaring `std::unique_ptr<_thunk<T>>` as its only data member:
 ~~~C++
 template <typename T>
 class matrix {
