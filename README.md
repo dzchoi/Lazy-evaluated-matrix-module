@@ -253,7 +253,7 @@ Without having compile constant `NDEBUG` defined, this module checks for the val
 
 If we compile with `NDEBUG` defined such as using `-DNDEBUG`, we can remove all such runtime checks.
 
-### Design of `matrix<T>`
+### Internals of `matrix<T>`
 
 Regarding to data members, `matrix<T>` is just a wrapper for a thunk and owns the thunk by declaring `std::unique_ptr<_thunk<T>>` in it as its only data member:
 ~~~C++
