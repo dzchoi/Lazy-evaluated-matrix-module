@@ -255,7 +255,7 @@ If we compile with `NDEBUG` defined such as using `-DNDEBUG`, we can remove all 
 
 ### Design of `matrix<T>`
 
-Regarding to data members, `matrix<T>` is just a wrapper for a thunk and owns the thunk by declaring `std::unique_ptr<_thunk<T>>` as its only data member:
+Regarding to data members, `matrix<T>` is just a wrapper for a thunk and owns the thunk by declaring `std::unique_ptr<_thunk<T>>` in it as its only data member:
 ~~~C++
 template <typename T>
 class matrix {
@@ -292,7 +292,7 @@ protected:
     _thunk(unsigned rows, unsigned cols): rows(rows), cols(cols) {}
 };
 ~~~
-Note that the member function `_thunk<T>::copy()` can be called on a thunk to duplicate the thunk as a whole, which is how `matrix<T>` copies matrices around.
+Note that the member function `_thunk<T>::copy()` can be called on a thunk to duplicate the thunk as a whole, which is how `matrix<T>` copies matrices around. (This kind of `copy()` is usually called a virtual constructor in C++ terms.)
 
 As an abstract class, `_thunk<T>` has many child (i.e, derived) classes, one of which is like:
 ~~~C++
@@ -313,7 +313,7 @@ public:
 };
 ~~~
 
-For mutable matrices, we have two derived thunk classes, `_thunk_tab<T>` and `_thunk_tab_view<T>`. The `_thunk_tab<T>` is the (only) actual thunk that contains and owns in-memory array for storing all its elements, whereas `_thunk_tab_view<T>` does not have its own array but holds just a reference to another array instead.
+For mutable matrices, we have two derived thunk classes, `_thunk_tab<T>` and `_thunk_tab_view<T>`. The `_thunk_tab<T>` is the (only mutable) type of a thunk that contains and owns in-memory array for storing all its elements, whereas `_thunk_tab_view<T>` does not have its own array but holds just a reference to another array instead.
 ~~~C++
 template <typename T>
 class _thunk_tab_view: public _thunk<T> {
