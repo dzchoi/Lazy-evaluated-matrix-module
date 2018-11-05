@@ -16,7 +16,7 @@ Most existing matrix modules evaluate matrices eagerly and in place. They comput
 
 For example, 1000x1000 identity matrix will occupy an array of 1,000,000 entries, most of which are nothing but 0.
 
-For another example, when we need `transpose(A)` for a given matrix `A`, we don't actually need a separate matrix in memory which has the same elements of `A` but in slightly different order. We could simply use (j,i)-th element of `A` when we need the (i,j)-the element of `transpose(A)`.
+For another example, when we need `transpose(A)` for a given matrix `A`, we don't actually need a separate matrix in memory which has the same elements of `A` but in slightly different order. We could simply use (j,i)-th element of `A` when we need the (i,j)-th element of `transpose(A)`.
 
 This module can define the 1000x1000 identity matrix as:
 ~~~C++
