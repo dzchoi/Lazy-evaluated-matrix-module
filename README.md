@@ -355,7 +355,7 @@ public:
 };
 ~~~
 
-Note that the `copy()` from `_thunk_tab<T>` does not duplicate its internal array as in another `_thunk_tab<T>`, but creates just the reference to the array as `_thunk_tab_view<T>`, which is where the "magic" of this module comes in. Note also that as the only mutable thunk, only `_thunk_tab<T>` has `operator=()` defined.
+Note that the `copy()` from `_thunk_tab<T>` does not duplicate its internal array as in another `_thunk_tab<T>`, but creates just the reference to the array as `_thunk_tab_view<T>`, which is where the memory-efficiency of this module kicks in. Note also that as the only mutable thunk, only `_thunk_tab<T>` has `operator=()` defined.
 
 ### Some limitations
 
